@@ -1,10 +1,12 @@
 #include "../includes.h"
-#include "Player.h"
-#include "entity.h"
 #include "esp.h"
+#include "entity.h"
 
 ESP::Settings ESP::g_Settings;
 
+// ------------------------------------------------------------
+// WorldToScreen
+// ------------------------------------------------------------
 inline bool WorldToScreen(
     const Vec3& world,
     Vector2& screen,
@@ -47,6 +49,9 @@ inline bool WorldToScreen(
     return true;
 }
 
+// ------------------------------------------------------------
+// Helpers
+// ------------------------------------------------------------
 namespace
 {
     ImU32 ToImU32(const ImVec4& c)
@@ -105,6 +110,9 @@ namespace
     }
 }
 
+// ------------------------------------------------------------
+// DrawESP
+// ------------------------------------------------------------
 void ESP::DrawESP(const float* viewMatrix)
 {
     ImGuiIO& io = ImGui::GetIO();
@@ -119,8 +127,7 @@ void ESP::DrawESP(const float* viewMatrix)
     constexpr float kMinBoxHeight = 5.0f;
     constexpr float kBoxWidthRatio = 0.45f;
 
-    // локальный игрок (для цвета)
-    PlayerPawn* local = ent.GetPawn(1); // подставь свой индекс локала
+    PlayerPawn* local = ent.GetPawn(1);
 
     for (int i = 2; i < kMaxPlayers; ++i)
     {
@@ -132,6 +139,10 @@ void ESP::DrawESP(const float* viewMatrix)
             continue;
 
         if (!pawn->GetNode())
+            continue;
+
+        // NEW: ignore teammates
+        if (g_Settings.ignoreTeammates && local && pawn->GetTeam() == local->GetTeam())
             continue;
 
         const Vector3 feet3D = pawn->GetFeet();
@@ -156,36 +167,92 @@ void ESP::DrawESP(const float* viewMatrix)
 
         ImU32 col = GetColorForPlayer(pawn, local);
 
+        // ---------------- BOX ----------------
         switch (g_Settings.boxStyle)
         {
         case BoxStyle::Full:
             DrawBoxFull(draw, x, y, boxWidth, boxHeight, col, g_Settings.thickness);
             break;
+
         case BoxStyle::Corners:
             DrawBoxCorners(draw, x, y, boxWidth, boxHeight, col, g_Settings.thickness, g_Settings.cornerFrac);
             break;
         }
+
+        // ---------------- HP BAR ----------------
+        if (g_Settings.showHealthBar)
+        {
+            float hpPerc = (float)pawn->health / (float)pawn->maxHealth;
+            hpPerc = std::clamp(hpPerc, 0.0f, 1.0f);
+
+            float barHeight = boxHeight * hpPerc;
+            float barX = x - 6.0f;
+            float barY = y + (boxHeight - barHeight);
+
+            ImU32 hpColor;
+            if (hpPerc > 0.66f)
+                hpColor = IM_COL32(0, 255, 0, 255);
+            else if (hpPerc > 0.33f)
+                hpColor = IM_COL32(255, 255, 0, 255);
+            else
+                hpColor = IM_COL32(255, 0, 0, 255);
+
+            draw->AddRectFilled(
+                ImVec2(barX, y),
+                ImVec2(barX + 4.0f, y + boxHeight),
+                IM_COL32(0, 0, 0, 180)
+            );
+
+            draw->AddRectFilled(
+                ImVec2(barX, barY),
+                ImVec2(barX + 4.0f, y + boxHeight),
+                hpColor
+            );
+
+            // ---------------- HP TEXT (NEW POSITION) ----------------
+            if (g_Settings.showHealthText)
+            {
+                char hpText[32];
+                sprintf_s(hpText, "%d", pawn->health);
+
+                float textW = ImGui::CalcTextSize(hpText).x;
+
+                float textX = barX - textW - 2.0f;
+                float textY = y - 2.0f;
+
+                draw->AddText(
+                    ImVec2(textX, textY),
+                    IM_COL32(255, 255, 255, 255),
+                    hpText
+                );
+            }
+        }
     }
 }
 
+// ------------------------------------------------------------
+// DrawMenu
+// ------------------------------------------------------------
 void ESP::DrawMenu()
 {
     if (ImGui::Begin("NoMore"))
     {
-        ImGui::Text("ESP settings");
+        ImGui::Text("ESP Settings");
 
-        ImGui::ColorEdit4("Enemy color", (float*)&g_Settings.enemyColor);
-        ImGui::ColorEdit4("Team color", (float*)&g_Settings.teamColor);
+        ImGui::ColorEdit4("Enemy Color", (float*)&g_Settings.enemyColor);
+        ImGui::ColorEdit4("Team Color", (float*)&g_Settings.teamColor);
 
-        ImGui::SliderFloat("Thickness", &g_Settings.thickness, 0.5f, 5.0f, "%.1f");
-        ImGui::SliderFloat("Corner frac", &g_Settings.cornerFrac, 0.1f, 0.5f, "%.2f");
+        ImGui::SliderFloat("Thickness", &g_Settings.thickness, 0.5f, 5.0f);
+        ImGui::SliderFloat("Corner Size", &g_Settings.cornerFrac, 0.1f, 0.5f);
 
-        const char* styles[] = { "Full box", "Corners" };
+        const char* styles[] = { "Full Box", "Corners" };
         int style = (g_Settings.boxStyle == BoxStyle::Full) ? 0 : 1;
-        if (ImGui::Combo("Box style", &style, styles, IM_ARRAYSIZE(styles)))
-        {
+        if (ImGui::Combo("Box Style", &style, styles, IM_ARRAYSIZE(styles)))
             g_Settings.boxStyle = (style == 0) ? BoxStyle::Full : BoxStyle::Corners;
-        }
+
+        ImGui::Checkbox("Show HP Bar", &g_Settings.showHealthBar);
+        ImGui::Checkbox("Show HP Text", &g_Settings.showHealthText);
+        ImGui::Checkbox("Ignore Teammates", &g_Settings.ignoreTeammates);
 
         ImGui::End();
     }

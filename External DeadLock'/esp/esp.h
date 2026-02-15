@@ -1,5 +1,6 @@
 #pragma once
 #include "../includes.h"
+#include "Player.h"
 
 bool WorldToScreen(
     const Vec3& world,
@@ -21,9 +22,15 @@ namespace ESP
     {
         ImVec4 enemyColor = ImVec4(1.0f, 0.0f, 0.0f, 1.0f);
         ImVec4 teamColor = ImVec4(0.0f, 1.0f, 0.0f, 1.0f);
-        float  thickness = 1.5f;
+
+        float thickness = 1.5f;
+        float cornerFrac = 0.25f;
+
         BoxStyle boxStyle = BoxStyle::Full;
-        float   cornerFrac = 0.25f; // длина уголка от стороны
+
+        bool showHealthBar = true;
+        bool showHealthText = true;
+        bool ignoreTeammates = false; // NEW
     };
 
     extern Settings g_Settings;
