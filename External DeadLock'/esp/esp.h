@@ -9,4 +9,25 @@ bool WorldToScreen(
     int screenH
 );
 
-void DrawESP(const float* viewMatrix);
+namespace ESP
+{
+    enum class BoxStyle
+    {
+        Full,
+        Corners
+    };
+
+    struct Settings
+    {
+        ImVec4 enemyColor = ImVec4(1.0f, 0.0f, 0.0f, 1.0f);
+        ImVec4 teamColor = ImVec4(0.0f, 1.0f, 0.0f, 1.0f);
+        float  thickness = 1.5f;
+        BoxStyle boxStyle = BoxStyle::Full;
+        float   cornerFrac = 0.25f; // длина уголка от стороны
+    };
+
+    extern Settings g_Settings;
+
+    void DrawESP(const float* viewMatrix);
+    void DrawMenu();
+}

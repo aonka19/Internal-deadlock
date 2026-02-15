@@ -30,20 +30,19 @@ void togleMenu()
 
 void render()
 {
+	ImGui_ImplDX11_NewFrame();
+	ImGui_ImplWin32_NewFrame();
+	ImGui::NewFrame();
+
+	// ESP рисуем всегда, меню — по флагу
+	ESP::DrawESP(offset::viewMatrix);
+
 	if (showMenu)
-	{
-		ImGui_ImplDX11_NewFrame();
-		ImGui_ImplWin32_NewFrame();
-		ImGui::NewFrame();
+		ESP::DrawMenu();
 
-		DrawESP(offset::viewMatrix);
-
-		ImGui::Begin("NoMore");
-		ImGui::End();
-
-		ImGui::Render();
-	}
+	ImGui::Render();
 }
+
 
 LRESULT __stdcall WndProc(const HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 
