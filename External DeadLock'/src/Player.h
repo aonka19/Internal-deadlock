@@ -19,5 +19,8 @@ public:
 	int32_t health; //0x0354
 	char pad_0358[4]; //0x0358
 	int8_t lifeState; //0x035C
-	char pad_035D[256]; //0x035D
+	char pad_035D[0x96];
+	uint8_t teamNum;   // 0x3F3
+	char pad_03F4[0xC];
+	uint8_t fFlags;    // 0x400
 };

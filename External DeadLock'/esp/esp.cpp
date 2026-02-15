@@ -2,27 +2,28 @@
 #include "Player.h"
 #include "entity.h"
 
-bool WorldToScreen(
+inline bool WorldToScreen(
     const Vec3& world,
     Vector2& screen,
-    float* vm,
+    const float* vm,
     int screenW,
     int screenH
 )
 {
-    float clipX =
+    // row-major, как у тебя
+    const float clipX =
         world.x * vm[0] +
         world.y * vm[1] +
         world.z * vm[2] +
         vm[3];
 
-    float clipY =
+    const float clipY =
         world.x * vm[4] +
         world.y * vm[5] +
         world.z * vm[6] +
         vm[7];
 
-    float clipW =
+    const float clipW =
         world.x * vm[12] +
         world.y * vm[13] +
         world.z * vm[14] +
@@ -31,29 +32,38 @@ bool WorldToScreen(
     if (clipW <= 0.01f)
         return false;
 
-    float invW = 1.0f / clipW;
-    clipX *= invW;
-    clipY *= invW;
+    const float invW = 1.0f / clipW;
+    const float ndcX = clipX * invW;
+    const float ndcY = clipY * invW;
 
-    screen.x = (screenW * 0.5f) * (clipX + 1.0f);
-    screen.y = (screenH * 0.5f) * (1.0f - clipY);
+    const float halfW = screenW * 0.5f;
+    const float halfH = screenH * 0.5f;
+
+    screen.x = halfW * (ndcX + 1.0f);
+    screen.y = halfH * (1.0f - ndcY);
 
     return true;
 }
 
-void DrawESP(float* viewMatrix)
+void DrawESP(const float* viewMatrix)
 {
     ImGuiIO& io = ImGui::GetIO();
-    int screenW = (int)io.DisplaySize.x;
-    int screenH = (int)io.DisplaySize.y;
+    const int screenW = static_cast<int>(io.DisplaySize.x);
+    const int screenH = static_cast<int>(io.DisplaySize.y);
 
     ImDrawList* draw = ImGui::GetBackgroundDrawList();
 
-    for (int i = 2; i < 64; i++) // max players
-    {
-        EntitySystem ent;
-        PlayerPawn* pawn = ent.GetPawn(i);
+    // ВАЖНО: один EntitySystem, а не в цикле
+    static EntitySystem ent;
 
+    constexpr int kMaxPlayers = 64;
+    constexpr float kMinBoxHeight = 5.0f;
+    constexpr float kHeadOffset = 90.0f;
+    constexpr float kBoxWidthRatio = 0.45f;
+
+    for (int i = 2; i < kMaxPlayers; ++i)
+    {
+        PlayerPawn* pawn = ent.GetPawn(i);
         if (!pawn)
             continue;
 
@@ -64,9 +74,9 @@ void DrawESP(float* viewMatrix)
         if (!node)
             continue;
 
-        Vector3 feet = node->absVecPos;
+        const Vector3& feet = node->absVecPos;
         Vector3 head = feet;
-        head.z += 85.0f;
+        head.z += kHeadOffset;
 
         Vector2 feet2D, head2D;
 
@@ -76,14 +86,14 @@ void DrawESP(float* viewMatrix)
         if (!WorldToScreen(head, head2D, viewMatrix, screenW, screenH))
             continue;
 
-        float boxHeight = feet2D.y - head2D.y;
-        if (boxHeight < 5.0f)
+        const float boxHeight = feet2D.y - head2D.y;
+        if (boxHeight < kMinBoxHeight)
             continue;
 
-        float boxWidth = boxHeight * 0.45f;
+        const float boxWidth = boxHeight * kBoxWidthRatio;
 
-        float x = head2D.x - boxWidth * 0.5f;
-        float y = head2D.y;
+        const float x = head2D.x - boxWidth * 0.5f;
+        const float y = head2D.y;
 
         draw->AddRect(
             ImVec2(x, y),

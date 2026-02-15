@@ -11,6 +11,8 @@ extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam
 	// init imgui
 void InitImGui();
 
+void togleMenu();
+
 	// WNDPROC
 LRESULT __stdcall WndProc(const HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 

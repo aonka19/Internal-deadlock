@@ -9,6 +9,7 @@ ID3D11Device* pDevice = NULL;
 ID3D11DeviceContext* pContext = NULL;
 ID3D11RenderTargetView* mainRenderTargetView;
 bool init = false;
+bool showMenu = true;
 
 void InitImGui()
 {
@@ -17,6 +18,31 @@ void InitImGui()
 	io.ConfigFlags = ImGuiConfigFlags_NoMouseCursorChange;
 	ImGui_ImplWin32_Init(window);
 	ImGui_ImplDX11_Init(pDevice, pContext);
+}
+
+void togleMenu()
+{
+	showMenu = !showMenu;
+	ImGuiIO& io = ImGui::GetIO();
+	io.WantCaptureKeyboard = showMenu;
+	io.WantCaptureMouse = showMenu;
+}
+
+void render()
+{
+	if (showMenu)
+	{
+		ImGui_ImplDX11_NewFrame();
+		ImGui_ImplWin32_NewFrame();
+		ImGui::NewFrame();
+
+		DrawESP(offset::viewMatrix);
+
+		ImGui::Begin("NoMore");
+		ImGui::End();
+
+		ImGui::Render();
+	}
 }
 
 LRESULT __stdcall WndProc(const HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
@@ -50,16 +76,7 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT 
 			return oPresent(pSwapChain, SyncInterval, Flags);
 	}
 
-	ImGui_ImplDX11_NewFrame();
-	ImGui_ImplWin32_NewFrame();
-	ImGui::NewFrame();
-
-	DrawESP(offset::viewMatrix);
-
-	ImGui::Begin("NoMore");
-	ImGui::End();
-
-	ImGui::Render();
+	render();
 
 	pContext->OMSetRenderTargets(1, &mainRenderTargetView, NULL);
 	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
@@ -77,5 +94,16 @@ DWORD WINAPI MainThread(LPVOID lpReserved)
 			init_hook = true;
 		}
 	} while (!init_hook);
+
+	while (true)
+	{
+		if (GetAsyncKeyState(VK_HOME) & 1)
+		{
+			showMenu = !showMenu;
+		}
+
+		Sleep(50);
+	}
+
 	return TRUE;
 }

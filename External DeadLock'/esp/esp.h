@@ -4,9 +4,9 @@
 bool WorldToScreen(
     const Vec3& world,
     Vector2& screen,
-    float* vm,
+    const float* vm,
     int screenW,
     int screenH
 );
 
-void DrawESP(float* viewMatrix);
+void DrawESP(const float* viewMatrix);

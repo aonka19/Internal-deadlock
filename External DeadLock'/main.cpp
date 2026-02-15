@@ -1,6 +1,7 @@
 #include "../includes.h"
 #include "DXHook.h"
 
+
 BOOL WINAPI DllMain(HMODULE hMod, DWORD dwReason, LPVOID lpReserved)
 {
 	switch (dwReason)
